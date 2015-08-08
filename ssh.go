@@ -36,7 +36,7 @@ func RunRemoteCmd(user string, addr string, key string, cmd string) (out string,
 	err = session.Run(cmd)
 	out = string(outBuf.Bytes())
 	if err != nil {
-		log.Errorf("Run failed:%v\n", err)
+		log.Errorf("Run failed:%v\n%s", err, out)
 	}
 	return
 }
