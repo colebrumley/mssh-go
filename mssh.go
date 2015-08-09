@@ -8,7 +8,6 @@ import (
 	"golang.org/x/crypto/ssh"
 	"io/ioutil"
 	"os"
-	"os/user"
 	"strings"
 )
 
