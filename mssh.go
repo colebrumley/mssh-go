@@ -54,14 +54,6 @@ func main() {
 func defaultAction(c *cli.Context) {
 	hosts := c.StringSlice("server")
 	u := c.String("user")
-	if len(u) == 0 {
-		// get current user if unset
-		usr, err := user.LookupId(fmt.Sprintf("%d", os.Getuid()))
-		if err != nil {
-			log.Fatalf("Could not look up current user: %v", err)
-		}
-		u = usr.Username
-	}
 
 	key := c.String("key")
 	if len(key) == 0 {
