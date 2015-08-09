@@ -8,8 +8,9 @@ env:
 
 before_install:
   - export GOPATH=$SHIPPABLE_GOPATH
-  - go get -t -d -v ./...
+
+install:
+  - go get -t -d -v ./... && go build -x -o mssh -a -installsuffix cgo ./...
 
 script:
-  - go build -o mssh -a -installsuffix cgo ./...
-  - mv mssh shippable/
+  - cp mssh shippable/
