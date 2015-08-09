@@ -1,0 +1,15 @@
+language: go
+
+go:
+  - release
+
+env:
+  - CGO_ENABLED=0
+
+before_install:
+  - export GOPATH=$SHIPPABLE_GOPATH
+  - go get -t -d -v ./...
+
+script:
+  - go build -o mssh -a -installsuffix cgo ./...
+  - mv mssh shippable/
