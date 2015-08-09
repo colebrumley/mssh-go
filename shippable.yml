@@ -12,5 +12,7 @@ script:
   - go get github.com/aktau/github-release
   - tar czvf mssh-linux-amd64.tar.gz mssh
   - cp mssh-linux-amd64.tar.gz shippable/buildoutput/
+  - $SHIPPABLE_GOPATH/bin/github-release delete --user colebrumley --repo mssh-go --tag latest
+  - $SHIPPABLE_GOPATH/bin/github-release release --user colebrumley --repo mssh-go --tag latest --name "Latest Build" --description "The latest Shippable CI build.  Only Linux x64 available currently." --pre-release
   - $SHIPPABLE_GOPATH/bin/github-release upload --user colebrumley --repo mssh-go --tag latest --name "mssh-linux-amd64.tar.gz" --file mssh-linux-amd64.tar.gz
 archive: true
