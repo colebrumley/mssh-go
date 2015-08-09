@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	log "github.com/Sirupsen/logrus"
 	"github.com/codegangsta/cli"
 	"github.com/fatih/color"
 	"golang.org/x/crypto/ssh"
@@ -13,6 +12,7 @@ import (
 	// Use of the os/user package prevents cross-compilation
 	"os/user" // <- https://github.com/golang/go/issues/6376
 	"path/filepath"
+	"runtime"
 	"strings"
 )
 
@@ -21,7 +21,7 @@ func main() {
 	app.HideVersion = true
 	app.Name = "mssh"
 	app.Usage = "Run SSH commands on multiple machines"
-	app.Version = "0.0.2.1"
+	app.Version = "0.0.3"
 	app.Flags = []cli.Flag{
 		cli.StringFlag{
 			Name:   "user,u",
@@ -47,8 +47,8 @@ func main() {
 			Usage: "Only show last n lines of output for each cmd",
 		},
 		cli.BoolTFlag{
-			Name:  "color,c",
-			Usage: "Print cmd output in color (use -c=false to disable)",
+			Name:  "color",
+			Usage: "Print cmd output in color (use --color=false to disable)",
 		},
 	}
 	app.Action = defaultAction
@@ -60,14 +60,14 @@ func defaultAction(c *cli.Context) {
 
 	currentUser, err := user.Current()
 	if err != nil {
-		log.Errorf("Could not get current user: %v", err)
+		print(fmt.Sprintf("[X] Could not get current user: %v", err), "")
 	}
 	u := c.String("user")
 	// If no flag, get current username
 	if len(u) == 0 {
 		u = currentUser.Username
 		if len(u) == 0 {
-			log.Errorln("No username specified!")
+			print("[X] No username specified!", "")
 		}
 	}
 
@@ -81,7 +81,7 @@ func defaultAction(c *cli.Context) {
 	if len(key) == 0 {
 		// If no key provided see if there's an ssh-agent running
 		if len(os.Getenv("SSH_AUTH_SOCK")) > 0 {
-			log.Println("Attempting to use existing ssh-agent")
+			print("[*] Attempting to use existing ssh-agent", "")
 			conn, err := net.Dial("unix", os.Getenv("SSH_AUTH_SOCK"))
 			if err != nil {
 				return
@@ -90,49 +90,56 @@ func defaultAction(c *cli.Context) {
 			ag := agent.NewClient(conn)
 			auths = []ssh.AuthMethod{ssh.PublicKeysCallback(ag.Signers)}
 		} else {
-			// Otherwise use ~/.ssh/id_rsa
-			key = filepath.FromSlash(currentUser.HomeDir + "/.ssh/id_rsa")
-			if !fileExists(key) {
-				log.Errorln("Must specify a key, ~/.ssh/id_rsa does not exist and no ssh-agent is available!")
+			k := ""
+			// Otherwise use ~/.ssh/id_rsa or ~/ssh/id_rsa (for windows)
+			if fileExists(currentUser.HomeDir + string(filepath.Separator) + ".ssh" + string(filepath.Separator) + "id_rsa") {
+				k = currentUser.HomeDir + string(filepath.Separator) + ".ssh" + string(filepath.Separator) + "id_rsa"
+			} else if fileExists(currentUser.HomeDir + string(filepath.Separator) + "ssh" + string(filepath.Separator) + "id_rsa") {
+				k = currentUser.HomeDir + string(filepath.Separator) + "ssh" + string(filepath.Separator) + "id_rsa"
+			}
+			if len(k) == 0 {
+				print("[X] No key specified: "+err.Error(), "")
 				cli.ShowAppHelp(c)
 				os.Exit(2)
 			}
-			pemBytes, err := ioutil.ReadFile(key)
+			pemBytes, err := ioutil.ReadFile(k)
 			if err != nil {
-				log.Errorf("%v", err)
+				print("[X] Error reading key: "+err.Error(), "")
+				os.Exit(2)
 			}
 			signer, err := ssh.ParsePrivateKey(pemBytes)
 			if err != nil {
-				log.Errorf("%v", err)
+				print("[X] Error reading key: "+err.Error(), "")
+				os.Exit(2)
 			}
 			auths = []ssh.AuthMethod{ssh.PublicKeys(signer)}
 		}
 	} else {
 		if !fileExists(key) {
-			log.Errorln("Specified key does not exist!")
+			print("[X] Specified key does not exist!", "")
 			os.Exit(1)
 		}
 		pemBytes, err := ioutil.ReadFile(key)
 		if err != nil {
-			log.Errorf("%v", err)
+			print("[X] "+err.Error(), "")
 		}
 		signer, err := ssh.ParsePrivateKey(pemBytes)
 		if err != nil {
-			log.Errorf("%v", err)
+			print("[X] "+err.Error(), "")
 		}
 		auths = []ssh.AuthMethod{ssh.PublicKeys(signer)}
 	}
 
 	// host(s) is required
 	if len(hosts) == 0 {
-		log.Warnln("At least one host is required")
+		print("At least one host is required", "yellow")
 		cli.ShowAppHelp(c)
 		os.Exit(2)
 	}
 
 	// At least one command is required
 	if len(c.Args().First()) == 0 {
-		log.Warnln("At least one command is required")
+		print("At least one command is required", "yellow")
 		cli.ShowAppHelp(c)
 		os.Exit(2)
 	}
@@ -152,18 +159,22 @@ func defaultAction(c *cli.Context) {
 				combined, err := runRemoteCmd(u, host, auth, cmd)
 				out := tail(string(combined), c.Int("lines"))
 				if err != nil {
-					pretty := prettyOutput(
-						fmt.Sprintf("Execution of `%s` on %s@%s failed. Error message: %v", cmd, u, host, err),
-						out, true, c.Bool("color"))
-					if c.Bool("fail") {
-						log.Fatalln(pretty)
+					col := ""
+					print(fmt.Sprintf("[X] Execution of `%s` on %s@%s failed. Error message: %v", cmd, u, host, err), "")
+					if c.Bool("color") {
+						col = "red"
 					}
-					log.Errorf(pretty)
+					print(out, col)
+					if c.Bool("fail") {
+						os.Exit(1)
+					}
 				} else {
-					pretty := prettyOutput(
-						fmt.Sprintf("Execution of `%s` on %s@%s succeeded:", cmd, u, host),
-						out, false, c.Bool("color"))
-					log.Println(pretty)
+					print(fmt.Sprintf("[*] Execution of `%s` on %s@%s succeeded:", cmd, u, host), "")
+					col := ""
+					if c.Bool("color") {
+						col = "green"
+					}
+					print(out, col)
 				}
 				done <- true
 			}
@@ -176,21 +187,20 @@ func defaultAction(c *cli.Context) {
 	}
 }
 
-func prettyOutput(status string, out string, isErr bool, useColor bool) (formatted string) {
-
-	formatted = status
-	if useColor {
-		if isErr {
-			formatted = fmt.Sprintf("%s\n%s", formatted, color.RedString("%s", out))
-		} else {
-			formatted = fmt.Sprintf("%s\n%s", formatted, color.GreenString("%s", out))
-		}
+func print(str string, c string) {
+	if len(c) == 0 || runtime.GOOS == "windows" {
+		fmt.Printf("%s\n", str)
 		return
 	}
-	if isErr {
-		formatted = fmt.Sprintf("%s\n%s", formatted, out)
-	} else {
-		formatted = fmt.Sprintf("%s\n%s", formatted, out)
+	switch c {
+	case "red":
+		fmt.Printf("%s\n", color.RedString("%s", str))
+	case "green":
+		fmt.Printf("%s\n", color.GreenString("%s", str))
+	case "yellow":
+		fmt.Printf("%s\n", color.YellowString("%s", str))
+	default:
+		fmt.Printf("%s\n", str)
 	}
 	return
 }
