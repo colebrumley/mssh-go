@@ -10,6 +10,7 @@ install:
 script:
   - cp mssh shippable/buildoutput/
   - go get github.com/aktau/github-release
-  - tar czvf shippable/buildoutput/mssh-linux-amd64.tar.gz shippable/buildoutput/mssh
-  - $SHIPPABLE_GOPATH/bin/github-release upload --user colebrumley --repo mssh-go --tag latest --name "mssh-linux-amd64.tar.gz" --file shippable/buildoutput/mssh-linux-amd64.tar.gz
+  - tar czvf mssh-linux-amd64.tar.gz mssh
+  - cp mssh-linux-amd64.tar.gz shippable/buildoutput/
+  - $SHIPPABLE_GOPATH/bin/github-release upload --user colebrumley --repo mssh-go --tag latest --name "mssh-linux-amd64.tar.gz" --file mssh-linux-amd64.tar.gz
 archive: true
