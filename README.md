@@ -1,6 +1,8 @@
 # mssh - multi-ssh client in Go
 ***Run multiple commands on multiple machines asynchronously***
 
+![shippable tag](https://api.shippable.com/projects/55c6f3c9edd7f2c0529a2f19/badge/master)
+
 `mssh` runs a given list of commands (in order) over ssh to multiple machines.  Each machine get's its own goroutine, so async benefits improve as more servers are added.  Keeping machines in dediated goroutines instead of individual command + host combinations ensures that commands are run in the order listed.
 
 See [mssh](http://sourceforge.net/projects/mssh/) on SourceForge for a more mature Python alternative.
