@@ -7,7 +7,6 @@
 
 This was a weekend project for me. While it's a fairly simple little app, there aren't any tests beyond my functional testing (*PRs welcome :)*).  I wouldn't rely on `mssh` for highly risky operations.
 
-*See [mssh](http://sourceforge.net/projects/mssh/) for a Python alternative.*
 
 ```
 NAME:
@@ -35,6 +34,8 @@ GLOBAL OPTIONS:
 ```sh
 # Get the number of running Docker containers
 # and % used of /dev/xvdb
+# Since no --key is defined, mssh will try
+# to use the local ssh-agent
 mssh \
   --user core \
   --server dev-01.lab.dev \
@@ -72,3 +73,14 @@ I've tested `mssh` primarily on OSX and 64 bit Linux.  The changes for v0.0.3 we
 
 The default RSA key paths are `~/.ssh/id_rsa` or `~/ssh/id_rsa` on Linux and OSX, and `%PROFILEDIR%\ssh\id_rsa` on Windows.
 
+## Alternatives
+Here are some alternatives in various other languages.  The difference between those and this?  This one's in Go, that's *probably* about it but I don't have much experience with other multi-ssh clients.
+ - [pssh](http://linux.die.net/man/1/pssh): Python
+ - [pussh](http://pussh.sourceforge.net/): Python
+ - [mssh](http://sourceforge.net/projects/mssh/) Python
+ - [pdsh](https://code.google.com/p/pdsh/): C
+ - [clusterit](http://clusterit.sourceforge.net/): C
+ - [mussh](http://sourceforge.net/projects/mussh/): Bash
+ - [GNU parallel](http://www.gnu.org/software/parallel/): C
+ - [parallel-ssh](https://github.com/pkittenis/parallel-ssh): Python
+ - [multi-ssh](https://github.com/denis-sokolov/multi-ssh): NodeJS
