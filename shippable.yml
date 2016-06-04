@@ -4,9 +4,11 @@ go:
 env:
   - secure: U37kEQRPvKHaoTaWtkUukCQ0T5P8T0uQXsPEKE5x5Aaz14ArLLcHQ8vc2RIF9bhcmyGbPNWuHtUawzDVB0zriGQJaliY0RajGRo6uGjPnfcTdUj7gAfDPzGX9cRXtHw1dAqGcpgAZVu1yIr7h0D2h/oYQzbR+E24Pkaylyj4SYtBLKHhhVQCaf85uET65uUyAGYMN3g7dG1Ovt97luuboU1rpimnsVZlDwH8qvMAeRchPI5E6MuDgLouhEkUc3bIRz2faj+56gHr1cW3NbPM/DBYyLEaXiI8uP6q522rnSHgmjBeXOv7invdYO/UNGScmwc6qscFzmL8Ja2l+THVQg== 
 before_install:
-  - export GOPATH=$SHIPPABLE_GOPATH
+  - export GOPATH=$SHIPPABLE_GOPATH GO15VENDOREXPERIMENT=1
+  - go get github.com/Masterminds/glide
+  - $SHIPPABLE_GOPATH/bin/glide i
 install:
-  - go get -t -d -v ./... && go build -x -o mssh ./...
+  - go build -x -o mssh
 script:
   - cp mssh shippable/buildoutput/
   - go get github.com/aktau/github-release
